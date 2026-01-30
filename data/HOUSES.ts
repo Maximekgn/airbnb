@@ -6,6 +6,7 @@ export const HOUSES = [
     rating: 4.5,
     name: "Maison Georgie",
     location: "Kochi, Kerala",
+    category: "Rental House",
     coordinates: { lat: 9.9312, lng: 76.2673 },
     isSelected: true,
     description:
@@ -38,6 +39,7 @@ export const HOUSES = [
     rating: 4.5,
     name: "Maison Max",
     location: "Edappally, Kerala",
+    category: "Apartment",
     coordinates: { lat: 10.0099, lng: 76.3577 },
     isSelected: true,
     description:
@@ -69,6 +71,7 @@ export const HOUSES = [
     rating: 4.8,
     name: "Villa Brume Marine",
     location: "Varkala, Kerala",
+    category: "Villas",
     coordinates: { lat: 8.7379, lng: 76.7163 },
     isSelected: false,
     description:
@@ -102,6 +105,7 @@ export const HOUSES = [
     rating: 4.3,
     name: "Bungalow des Palmiers",
     location: "Fort Kochi, Kerala",
+    category: "Cottages",
     coordinates: { lat: 9.9669, lng: 76.2425 },
     isSelected: false,
     description:
@@ -133,6 +137,7 @@ export const HOUSES = [
     rating: 4.9,
     name: "Loft Backwaters",
     location: "Alleppey, Kerala",
+    category: "Houses",
     coordinates: { lat: 9.4981, lng: 76.3388 },
     isSelected: false,
     description:
@@ -166,6 +171,7 @@ export const HOUSES = [
     rating: 4.6,
     name: "Maison des Mangues",
     location: "Thrissur, Kerala",
+    category: "Rental House",
     coordinates: { lat: 10.5276, lng: 76.2144 },
     isSelected: false,
     description:
@@ -190,4 +196,14 @@ export const HOUSES = [
       "https://images.unsplash.com/photo-1484156818044-c040038b0710?w=400&sat=10",
     ],
   },
+];
+
+export const categories = [
+  "Maison de location",
+  "Appartement",
+  "Maisons",
+  "Chambres",
+  "Villas",
+  "Chalets",
+  "Chaumières",
 ];

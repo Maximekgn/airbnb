@@ -7,6 +7,7 @@ export default function RootLayout() {
       <Stack.Screen name="login/index" />
       <Stack.Screen name="register/index" />
       <Stack.Screen name="home/index" />
+      <Stack.Screen name="profile/index" />
     </Stack>
   );
 }

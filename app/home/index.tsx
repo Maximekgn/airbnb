@@ -6,17 +6,7 @@ import CategoryButton from "../../components/CategoryButton";
 import HouseCard from "../../components/HouseCard";
 import SearchBar from "../../components/SearchBar";
 import TopBar from "../../components/TopBar";
-import { HOUSES } from "../../data/HOUSES";
-
-const categories = [
-  "Rental House",
-  "Apartment",
-  "Houses",
-  "Rooms",
-  "Villas",
-  "Cabins",
-  "Cottages",
-];
+import { HOUSES, categories } from "../../data/HOUSES";
 
 const Home = () => {
   const [activeCategory, setActiveCategory] = useState("Rental House");
@@ -24,6 +14,10 @@ const Home = () => {
   const TITLE_2 = "Votre nouveaux logement";
   const TITLE_3 = "Logements proches de vous";
   const router = useRouter();
+  const onCategoryPress = (category: string) => {
+    setActiveCategory(category);
+    router.push({ pathname: "/houses", params: { s: category } });
+  };
   const onHousePress = (id: string) => {
     router.push({
       pathname: "/houses/[id]",
@@ -56,7 +50,7 @@ const Home = () => {
               key={category}
               label={category}
               isActive={activeCategory === category}
-              onPress={() => setActiveCategory(category)}
+              onPress={() => onCategoryPress(category)}
             />
           ))}
         </ScrollView>

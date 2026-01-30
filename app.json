@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mxmkgn.airbnb"
     },
     "web": {
       "output": "static",
@@ -38,6 +39,13 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+          "iosAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx"
         }
       ]
     ],
