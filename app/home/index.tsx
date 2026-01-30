@@ -6,6 +6,7 @@ import CategoryButton from "../../components/CategoryButton";
 import HouseCard from "../../components/HouseCard";
 import SearchBar from "../../components/SearchBar";
 import TopBar from "../../components/TopBar";
+import AdBanner from "../../components/AdBanner";
 import { HOUSES, categories } from "../../data/HOUSES";
 
 const Home = () => {
@@ -14,19 +15,23 @@ const Home = () => {
   const TITLE_2 = "Votre nouveaux logement";
   const TITLE_3 = "Logements proches de vous";
   const router = useRouter();
+  
   const onCategoryPress = (category: string) => {
     setActiveCategory(category);
     router.push({ pathname: "/houses", params: { s: category } });
   };
+  
   const onHousePress = (id: string) => {
     router.push({
       pathname: "/houses/[id]",
       params: { id },
     });
   };
+  
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView showsVerticalScrollIndicator={false}>
+      {/* Contenu principal avec défilement */}
+      <ScrollView showsVerticalScrollIndicator={false} className="pb-20">
         {/* Top Bar */}
         <TopBar />
 
@@ -38,6 +43,11 @@ const Home = () => {
 
         {/* Search Bar */}
         <SearchBar />
+
+        {/* Pub intégrée dans le contenu */}
+        <View className="mt-4 mx-4">
+          <AdBanner />
+        </View>
 
         {/* Categories */}
         <ScrollView
@@ -73,7 +83,12 @@ const Home = () => {
             />
           ))}
         </View>
+        
+        {/* Espace en bas */}
+        <View className="h-4" />
       </ScrollView>
+      
+      
     </SafeAreaView>
   );
 };
