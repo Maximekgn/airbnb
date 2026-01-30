@@ -4,36 +4,26 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
   FlatList,
   Image,
   Linking,
   Modal,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from "react-native";
-import {
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const TEXTS = {
   title: "Détails du logement",
   notFound: "Maison non trouvée",
-  notFoundDesc: "Ce logement n'existe pas ou a été supprimé.",
-  photos: "Galerie photos",
+  photos: "Photos du bien",
   details: "Caractéristiques",
-  about: "À propos du logement",
-  host: "Votre hôte",
+  about: "À propos",
+  host: "Hôte",
   call: "Appeler",
   whatsapp: "WhatsApp",
   email: "Email",
@@ -48,82 +38,17 @@ const TEXTS = {
   unavailable: "Non disponible",
   yes: "Oui",
   no: "Non",
-  contactHost: "Contacter l'hôte",
-  goBack: "Retour",
-  loading: "Chargement...",
-};
-
-const COLORS = {
-  primary: "#FF385C",
-  primaryDark: "#E31C5F",
-  secondary: "#00A699",
-  background: "#FFFFFF",
-  surface: "#F7F7F7",
-  surfaceHover: "#EBEBEB",
-  text: "#222222",
-  textSecondary: "#717171",
-  textLight: "#B0B0B0",
-  border: "#DDDDDD",
-  success: "#25D366",
-  star: "#FFB400",
-  white: "#FFFFFF",
-  black: "#000000",
-  overlay: "rgba(0,0,0,0.5)",
-};
-
-const COLORS = {
-  primary: "#FF385C",
-  primaryDark: "#E31C5F",
-  secondary: "#00A699",
-  background: "#FFFFFF",
-  surface: "#F7F7F7",
-  surfaceHover: "#EBEBEB",
-  text: "#222222",
-  textSecondary: "#717171",
-  textLight: "#B0B0B0",
-  border: "#DDDDDD",
-  success: "#25D366",
-  star: "#FFB400",
-  white: "#FFFFFF",
-  black: "#000000",
-  overlay: "rgba(0,0,0,0.5)",
-};
-
-// Responsive breakpoints
-const getResponsiveValues = (width: number) => {
-  const isTablet = width >= 768;
-  const isDesktop = width >= 1024;
-
-  return {
-    containerPadding: isDesktop ? 40 : isTablet ? 32 : 20,
-    imageHeight: isDesktop ? 450 : isTablet ? 380 : width * 0.65,
-    thumbnailSize: isDesktop ? 120 : isTablet ? 100 : 88,
-    detailColumns: isDesktop ? 6 : isTablet ? 4 : 3,
-    fontSize: {
-      title: isDesktop ? 28 : isTablet ? 24 : 22,
-      subtitle: isDesktop ? 18 : isTablet ? 16 : 15,
-      body: isDesktop ? 16 : 14,
-      small: isDesktop ? 14 : 12,
-    },
-    spacing: {
-      section: isDesktop ? 32 : isTablet ? 28 : 24,
-      item: isDesktop ? 20 : isTablet ? 16 : 12,
-    },
-  };
 };
 
 export default function PropertyDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const isSmallScreen = width < 380;
+  const isLargeScreen = width >= 500;
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const scrollY = useSharedValue(0);
-
-  const responsive = getResponsiveValues(windowWidth);
-
   useEffect(() => {
     const fetchProperty = async () => {
       const data = await getPropertyById(id);
@@ -132,53 +57,20 @@ export default function PropertyDetail() {
     };
     fetchProperty();
   }, [id]);
-
-  const CURRENCY = APP_INFO.curency || "FCFA";
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
-
-  const headerAnimatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [0, 100], [0, 1]);
-    return {
-      opacity,
-      backgroundColor: `rgba(255, 255, 255, ${opacity})`,
-    };
-  });
+  const CURRENCY = APP_INFO.curency || "fcfa";
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text className="mt-4 text-gray-500 text-base">{TEXTS.loading}</Text>
+      <View style={styles.center}>
+        <Text>Loading...</Text>
       </View>
     );
   }
-
   if (!property) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
-        <View className="flex-1 justify-center items-center px-8">
-          <View className="w-24 h-24 rounded-full bg-red-50 justify-center items-center mb-6">
-            <Ionicons name="home-outline" size={48} color={COLORS.primary} />
-          </View>
-          <Text className="text-xl font-bold text-gray-900 mb-2">
-            {TEXTS.notFound}
-          </Text>
-          <Text className="text-gray-500 text-center mb-8">
-            {TEXTS.notFoundDesc}
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="bg-black px-8 py-4 rounded-xl"
-          >
-            <Text className="text-white font-semibold">{TEXTS.goBack}</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={styles.center}>
+        <Text style={styles.errorText}>{TEXTS.notFound}</Text>
+      </View>
     );
   }
 
@@ -192,28 +84,24 @@ export default function PropertyDetail() {
     label: string;
     value: string;
     icon: React.ComponentProps<typeof Ionicons>["name"];
-    color: string;
   }[] = [
     {
       key: "bedrooms",
       label: TEXTS.bedrooms,
       value: String(property.bedrooms ?? "-"),
       icon: "bed-outline",
-      color: "#6366F1",
     },
     {
       key: "bathrooms",
       label: TEXTS.bathrooms,
       value: String(property.bathrooms ?? "-"),
       icon: "water-outline",
-      color: "#0EA5E9",
     },
     {
       key: "garage",
       label: TEXTS.garage,
       value: property.garage ? TEXTS.yes : TEXTS.no,
       icon: "car-outline",
-      color: "#8B5CF6",
     },
     {
       key: "parking",
@@ -223,21 +111,18 @@ export default function PropertyDetail() {
           ? `${property.parking} place${(property.parking || 0) > 1 ? "s" : ""}`
           : "-",
       icon: "car-sport-outline",
-      color: "#EC4899",
     },
     {
       key: "wifi",
       label: TEXTS.wifi,
       value: property.wifi ? TEXTS.available : TEXTS.unavailable,
       icon: "wifi-outline",
-      color: "#10B981",
     },
     {
       key: "kitchen",
       label: TEXTS.kitchen,
       value: property.kitchen || "-",
       icon: "restaurant-outline",
-      color: "#F59E0B",
     },
   ];
 
@@ -260,101 +145,9 @@ export default function PropertyDetail() {
     }
   };
 
-  const handleOpenImage = (uri: string, index: number) => {
-    setSelectedImage(uri);
-    setSelectedImageIndex(index);
-  };
+  const handleOpenImage = (uri: string) => setSelectedImage(uri);
 
-  const handleShare = async () => {
-    // Placeholder for share functionality
-  };
-
-  // Detail Card Component
-  const DetailCard = ({
-    item,
-    index,
-  }: {
-    item: (typeof details)[0];
-    index: number;
-  }) => (
-    <Animated.View
-      entering={FadeInDown.delay(index * 50).springify()}
-      className="items-center justify-center p-4 bg-white rounded-2xl border border-gray-100"
-      style={{
-        width: windowWidth >= 1024 ? "15%" : windowWidth >= 768 ? "22%" : "30%",
-        marginBottom: responsive.spacing.item,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-      }}
-    >
-      <View
-        className="w-12 h-12 rounded-full items-center justify-center mb-3"
-        style={{ backgroundColor: `${item.color}15` }}
-      >
-        <Ionicons name={item.icon} size={24} color={item.color} />
-      </View>
-      <Text
-        className="font-bold text-gray-900"
-        style={{ fontSize: responsive.fontSize.subtitle }}
-      >
-        {item.value}
-      </Text>
-      <Text
-        className="text-gray-500 text-center mt-1"
-        style={{ fontSize: responsive.fontSize.small }}
-      >
-        {item.label}
-      </Text>
-    </Animated.View>
-  );
-
-  // Action Button Component
-  const ActionButton = ({
-    icon,
-    label,
-    onPress,
-    variant = "default",
-  }: {
-    icon: React.ComponentProps<typeof Ionicons>["name"];
-    label: string;
-    onPress: () => void;
-    variant?: "default" | "whatsapp" | "primary";
-  }) => {
-    const bgColor =
-      variant === "whatsapp"
-        ? COLORS.success
-        : variant === "primary"
-          ? COLORS.primary
-          : COLORS.white;
-    const textColor = variant === "default" ? COLORS.text : COLORS.white;
-    const iconColor = variant === "default" ? COLORS.text : COLORS.white;
-
-    return (
-      <TouchableOpacity
-        onPress={onPress}
-        className="flex-row items-center justify-center px-5 py-3 rounded-xl"
-        style={{
-          backgroundColor: bgColor,
-          borderWidth: variant === "default" ? 1 : 0,
-          borderColor: COLORS.border,
-          flex: 1,
-          minWidth: 100,
-        }}
-        activeOpacity={0.8}
-      >
-        <Ionicons name={icon} size={18} color={iconColor} />
-        <Text
-          className="font-semibold ml-2"
-          style={{ color: textColor, fontSize: responsive.fontSize.body }}
-        >
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  const TITLE = TEXTS.title;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -371,7 +164,13 @@ export default function PropertyDetail() {
         </View>
 
         <TouchableOpacity
-          style={styles.imageCard}
+          style={[
+            styles.imageCard,
+            {
+              width: width - 40,
+              height: isSmallScreen ? (width - 40) * 0.7 : (width - 40) * 0.6,
+            },
+          ]}
           activeOpacity={0.9}
           onPress={() => handleOpenImage(property.image)}
         >
@@ -385,12 +184,22 @@ export default function PropertyDetail() {
           </View>
         </TouchableOpacity>
 
-        <View style={styles.rowBetween}>
-          <View>
-            <Text style={styles.propertyName}>{property.name}</Text>
+        <View
+          style={[styles.rowBetween, isSmallScreen && styles.rowBetweenSmall]}
+        >
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text
+              style={[styles.propertyName, isSmallScreen && { fontSize: 16 }]}
+              numberOfLines={2}
+            >
+              {property.name}
+            </Text>
             <View style={styles.locationContainer}>
               <Ionicons name="location-outline" size={14} color="#777" />
-              <Text style={styles.locationText}> {property.location}</Text>
+              <Text style={styles.locationText} numberOfLines={1}>
+                {" "}
+                {property.location}
+              </Text>
             </View>
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={14} color="#f5a623" />
@@ -399,21 +208,31 @@ export default function PropertyDetail() {
               </Text>
             </View>
           </View>
-          {/* <TouchableOpacity style={styles.mapButton}>
-            <Text>Localisation</Text>
-            <Ionicons name="map-outline" size={20} color="#333" />
-          </TouchableOpacity> */}
 
-          {/* Call and whatsap button */}
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <TouchableOpacity style={styles.mapButton} onPress={handleCall}>
-              <Ionicons name="call-outline" size={20} color="#333" />
+          {/* Call and whatsapp button */}
+          <View style={{ flexDirection: "row", gap: isSmallScreen ? 8 : 12 }}>
+            <TouchableOpacity
+              style={[styles.mapButton, isSmallScreen && styles.smallButton]}
+              onPress={handleCall}
+            >
+              <Ionicons
+                name="call-outline"
+                size={isSmallScreen ? 18 : 20}
+                color="#333"
+              />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.whatsappButton}
+              style={[
+                styles.whatsappButton,
+                isSmallScreen && styles.smallButton,
+              ]}
               onPress={handleWhatsApp}
             >
-              <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+              <Ionicons
+                name="logo-whatsapp"
+                size={isSmallScreen ? 18 : 20}
+                color="#fff"
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -426,10 +245,21 @@ export default function PropertyDetail() {
           keyExtractor={(_, i) => String(i)}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => handleOpenImage(item)}>
-              <Image source={{ uri: item }} style={styles.thumb} />
+              <Image
+                source={{ uri: item }}
+                style={[
+                  styles.thumb,
+                  {
+                    width: isSmallScreen ? 72 : isLargeScreen ? 110 : 88,
+                    height: isSmallScreen ? 52 : isLargeScreen ? 80 : 64,
+                  },
+                ]}
+              />
             </TouchableOpacity>
           )}
-          ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+          ItemSeparatorComponent={() => (
+            <View style={{ width: isSmallScreen ? 8 : 12 }} />
+          )}
           contentContainerStyle={{ paddingVertical: 8 }}
         />
 
@@ -438,15 +268,32 @@ export default function PropertyDetail() {
         </Text>
         <View style={styles.detailsGrid}>
           {details.map((d) => (
-            <View key={d.key} style={styles.detailItem}>
+            <View
+              key={d.key}
+              style={[
+                styles.detailItem,
+                {
+                  width: isSmallScreen ? "48%" : isLargeScreen ? "30%" : "30%",
+                  marginBottom: isSmallScreen ? 14 : 18,
+                },
+              ]}
+            >
               <Ionicons
                 name={d.icon}
-                size={24}
+                size={isSmallScreen ? 20 : 24}
                 color="#333"
                 style={styles.detailIcon}
               />
-              <Text style={styles.detailValue}>{d.value}</Text>
-              <Text style={styles.detailLabel}>{d.label}</Text>
+              <Text
+                style={[styles.detailValue, isSmallScreen && { fontSize: 14 }]}
+              >
+                {d.value}
+              </Text>
+              <Text
+                style={[styles.detailLabel, isSmallScreen && { fontSize: 11 }]}
+              >
+                {d.label}
+              </Text>
             </View>
           ))}
         </View>
@@ -461,35 +308,110 @@ export default function PropertyDetail() {
           <View style={styles.hostInfo}>
             <Image
               source={{ uri: property.owner?.avatar || property.image }}
-              style={styles.hostAvatar}
+              style={[
+                styles.hostAvatar,
+                isSmallScreen && { width: 44, height: 44, borderRadius: 22 },
+              ]}
             />
             <View style={{ flex: 1 }}>
-              <Text style={styles.hostName}>
+              <Text
+                style={[styles.hostName, isSmallScreen && { fontSize: 14 }]}
+                numberOfLines={1}
+              >
                 {property.owner?.firstName} {property.owner?.lastName}
               </Text>
               {property.owner?.tel ? (
-                <Text style={styles.hostContact}>{property.owner.tel}</Text>
+                <Text
+                  style={[
+                    styles.hostContact,
+                    isSmallScreen && { fontSize: 12 },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {property.owner.tel}
+                </Text>
               ) : null}
               {property.owner?.email ? (
-                <Text style={styles.hostContact}>{property.owner.email}</Text>
+                <Text
+                  style={[
+                    styles.hostContact,
+                    isSmallScreen && { fontSize: 11 },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {property.owner.email}
+                </Text>
               ) : null}
             </View>
           </View>
-          <View style={styles.hostActions}>
-            <TouchableOpacity style={styles.hostButton} onPress={handleCall}>
-              <Ionicons name="call" size={16} color="#111" />
-              <Text style={styles.hostButtonText}>{TEXTS.call}</Text>
+          <View
+            style={[
+              styles.hostActions,
+              isSmallScreen && { justifyContent: "space-between" },
+            ]}
+          >
+            <TouchableOpacity
+              style={[
+                styles.hostButton,
+                isSmallScreen && styles.hostButtonSmall,
+              ]}
+              onPress={handleCall}
+            >
+              <Ionicons
+                name="call"
+                size={isSmallScreen ? 14 : 16}
+                color="#111"
+              />
+              <Text
+                style={[
+                  styles.hostButtonText,
+                  isSmallScreen && { fontSize: 11 },
+                ]}
+              >
+                {TEXTS.call}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.hostButton}
+              style={[
+                styles.hostButton,
+                isSmallScreen && styles.hostButtonSmall,
+              ]}
               onPress={handleWhatsApp}
             >
-              <Ionicons name="logo-whatsapp" size={16} color="#111" />
-              <Text style={styles.hostButtonText}>{TEXTS.whatsapp}</Text>
+              <Ionicons
+                name="logo-whatsapp"
+                size={isSmallScreen ? 14 : 16}
+                color="#111"
+              />
+              <Text
+                style={[
+                  styles.hostButtonText,
+                  isSmallScreen && { fontSize: 11 },
+                ]}
+              >
+                {TEXTS.whatsapp}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.hostButton} onPress={handleEmail}>
-              <Ionicons name="mail" size={16} color="#111" />
-              <Text style={styles.hostButtonText}>{TEXTS.email}</Text>
+            <TouchableOpacity
+              style={[
+                styles.hostButton,
+                isSmallScreen && styles.hostButtonSmall,
+              ]}
+              onPress={handleEmail}
+            >
+              <Ionicons
+                name="mail"
+                size={isSmallScreen ? 14 : 16}
+                color="#111"
+              />
+              <Text
+                style={[
+                  styles.hostButtonText,
+                  isSmallScreen && { fontSize: 11 },
+                ]}
+              >
+                {TEXTS.email}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -510,7 +432,13 @@ export default function PropertyDetail() {
             {selectedImage ? (
               <Image
                 source={{ uri: selectedImage }}
-                style={styles.modalImage}
+                style={[
+                  styles.modalImage,
+                  {
+                    width: width - 32,
+                    height: Math.min(width - 32, height * 0.7),
+                  },
+                ]}
               />
             ) : null}
           </View>
@@ -521,8 +449,6 @@ export default function PropertyDetail() {
     </SafeAreaView>
   );
 }
-
-const CARD_WIDTH = width - 40;
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
@@ -549,8 +475,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   imageCard: {
-    width: CARD_WIDTH,
-    height: CARD_WIDTH * 0.6,
     borderRadius: 16,
     overflow: "hidden",
     alignSelf: "center",
@@ -586,6 +510,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 6,
   },
+  rowBetweenSmall: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  smallButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
   propertyName: { fontSize: 20, fontWeight: "700", color: "#111" },
   locationContainer: {
     flexDirection: "row",
@@ -617,20 +550,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   thumb: {
-    width: 88,
-    height: 64,
     borderRadius: 10,
     backgroundColor: "#eee",
   },
   detailsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     marginTop: 8,
   },
   detailItem: {
-    width: "30%",
-    marginBottom: 18,
     alignItems: "center",
   },
   detailIcon: {
@@ -703,6 +632,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e0e0e0",
   },
+  hostButtonSmall: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 4,
+  },
   hostButtonText: {
     fontSize: 13,
     fontWeight: "600",
@@ -716,8 +650,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalImage: {
-    width: "100%",
-    height: width,
     borderRadius: 12,
     resizeMode: "contain",
   },

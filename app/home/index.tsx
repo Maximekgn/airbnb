@@ -66,17 +66,16 @@ const Home = () => {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1">
-      
+    <SafeAreaView className="flex-1 bg-bg">
       {/* Contenu principal avec défilement */}
-      <ScrollView showsVerticalScrollIndicator={false} className="pb-20 bg-white">
+      <ScrollView showsVerticalScrollIndicator={false} className="pb-20 bg-bg">
         {/* Top Bar */}
         <TopBar />
 
         {/* Title */}
         <View className="px-4 mt-4">
-          <Text className="text-3xl font-bold text-gray-900">{TITLE_1}</Text>
-          <Text className="text-3xl font-bold text-gray-900">{TITLE_2}</Text>
+          <Text className="text-3xl font-bold text-ink">{TITLE_1}</Text>
+          <Text className="text-3xl font-bold text-ink">{TITLE_2}</Text>
         </View>
 
         {/* Search Bar */}
@@ -105,7 +104,7 @@ const Home = () => {
 
         {/* Section Title */}
         <View className="px-4 mt-2 mb-3">
-          <Text className="text-lg font-bold text-gray-900">{TITLE_3}</Text>
+          <Text className="text-lg font-bold text-ink">{TITLE_3}</Text>
         </View>
 
         {/* House Cards Grid */}

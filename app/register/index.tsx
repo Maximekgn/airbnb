@@ -1,12 +1,10 @@
-import { register } from "@/services/auth";
-import {
-  Feather,
-  FontAwesome,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { COLORS } from "@/constants/COLORS";
+import { registerUser } from "@/services/auth";
+import useAuthStore from "@/stores/authStore";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -35,46 +33,102 @@ const RegisterScreen = () => {
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const storeLogin = useAuthStore((state: any) => state.login);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  const storeLogin = useAuthStore((state) => state.login);
 
   useEffect(() => {
     AsyncStorage.setItem(ONBOARDING_KEY, "true");
   }, []);
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "Le prénom est requis";
+    }
+
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Le nom est requis";
+    }
+
+    if (!form.email.trim()) {
+      newErrors.email = "L'email est requis";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = "Email invalide";
+    }
+
+    if (!form.tel.trim()) {
+      newErrors.tel = "Le téléphone est requis";
+    }
+
+    if (!form.password.trim()) {
+      newErrors.password = "Le mot de passe est requis";
+    } else if (form.password.length < 6) {
+      newErrors.password =
+        "Le mot de passe doit contenir au moins 6 caractères";
+    }
+
+    if (!termsAccepted) {
+      Alert.alert("Erreur", "Veuillez accepter les conditions générales");
+      return false;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRegister = async () => {
-    // Basic validation
-    if (
-      !form.firstName ||
-      !form.lastName ||
-      !form.email ||
-      !form.password ||
-      !form.tel
-    ) {
-      Alert.alert("Erreur", "Veuillez remplir tous les champs");
+    setErrors({});
+
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
     try {
-      const response = await register(
-        form.email,
-        form.password,
-        form.firstName,
-        form.lastName,
-        form.tel,
-      );
+      const response = await registerUser({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        tel: form.tel,
+        password: form.password,
+      });
 
-      if (response.user) {
+      if (response.success && response.user) {
+        // Auto-login après l'inscription
         await AsyncStorage.setItem(ONBOARDING_KEY, "true");
-        storeLogin(response.user, response.token);
-        Alert.alert("Succès", "Votre compte a été créé avec succès", [
-          { text: "OK", onPress: () => router.replace("/home") },
-        ]);
-      } else {
+
+        // Le token n'est pas retourné à l'inscription selon les spécifications
+        // L'utilisateur doit se connecter après l'inscription
         Alert.alert(
-          "Erreur",
-          response.message || "Une erreur est survenue lors de l'inscription",
+          "Succès",
+          "Votre compte a été créé avec succès. Veuillez vous connecter.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                router.replace("/login");
+              },
+            },
+          ],
         );
+      } else {
+        const errorMessage =
+          response.message || "Une erreur est survenue lors de l'inscription";
+        Alert.alert("Erreur d'inscription", errorMessage);
+
+        // Afficher les erreurs de validation si disponibles
+        if (response.errors) {
+          const newErrors: Record<string, string> = {};
+          Object.entries(response.errors).forEach(
+            ([key, value]: [string, any]) => {
+              newErrors[key] = Array.isArray(value) ? value[0] : value;
+            },
+          );
+          setErrors(newErrors);
+        }
       }
     } catch (error) {
       Alert.alert("Erreur", "Une erreur inattendue s'est produite");
@@ -84,8 +138,17 @@ const RegisterScreen = () => {
     }
   };
 
+  const updateField = (field: keyof typeof form, value: string) => {
+    setForm({ ...form, [field]: value });
+    if (errors[field]) {
+      const newErrors = { ...errors };
+      delete newErrors[field];
+      setErrors(newErrors);
+    }
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-bg">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -97,35 +160,15 @@ const RegisterScreen = () => {
         >
           {/* Header Section */}
           <View className="items-center mt-10 mb-8">
-            <View className="w-20 h-20 bg-rose-50 rounded-2xl items-center justify-center mb-4 rotate-3">
-              <Ionicons name="home" size={40} color="#F43F5E" />
+            <View className="w-20 h-20 bg-primaryLight rounded-2xl items-center justify-center mb-4 rotate-3">
+              <Ionicons name="home" size={40} color={COLORS.primary} />
             </View>
-            <Text className="text-3xl font-bold text-gray-900 text-center">
+            <Text className="text-3xl font-bold text-ink text-center">
               Rejoignez-nous
             </Text>
-            <Text className="text-gray-500 text-center mt-2 text-base">
-              Créez votre compte pour explorer des logements d'exception.
+            <Text className="text-muted text-center mt-2 text-base">
+              Créez votre compte pour explorer des logements d&apos;exception.
             </Text>
-          </View>
-
-          {/* Social Auth Buttons (Visual only for now) */}
-          <View className="flex-row justify-between mb-8">
-            <TouchableOpacity className="flex-1 flex-row bg-white border border-gray-200 p-4 rounded-xl items-center justify-center mr-2 shadow-sm">
-              <FontAwesome name="google" size={20} color="#DB4437" />
-              <Text className="ml-3 font-semibold text-gray-700">Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="flex-1 flex-row bg-white border border-gray-200 p-4 rounded-xl items-center justify-center ml-2 shadow-sm">
-              <FontAwesome name="apple" size={20} color="black" />
-              <Text className="ml-3 font-semibold text-gray-700">Apple</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="flex-row items-center mb-8">
-            <View className="flex-1 h-[1px] bg-gray-200" />
-            <Text className="mx-4 text-gray-400 font-medium">
-              Ou continuer avec email
-            </Text>
-            <View className="flex-1 h-[1px] bg-gray-200" />
           </View>
 
           {/* Form Fields */}
@@ -133,131 +176,206 @@ const RegisterScreen = () => {
             <View className="flex-row space-x-4">
               {/* First Name */}
               <View className="flex-1">
-                <Text className="text-gray-700 font-medium mb-2 ml-1">
-                  Prénom
-                </Text>
-                <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
-                  <Feather name="user" size={20} color="#9CA3AF" />
+                <Text className="text-ink font-medium mb-2 ml-1">Prénom</Text>
+                <View
+                  className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
+                    errors.firstName ? "border-red-500" : "border-border"
+                  }`}
+                >
+                  <Feather
+                    name="user"
+                    size={20}
+                    color={errors.firstName ? "#EF4444" : COLORS.muted}
+                  />
                   <TextInput
-                    className="flex-1 ml-3 text-gray-900"
+                    className="flex-1 ml-3 text-ink"
                     placeholder="John"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={COLORS.muted}
                     value={form.firstName}
-                    onChangeText={(text) =>
-                      setForm({ ...form, firstName: text })
-                    }
+                    onChangeText={(text) => updateField("firstName", text)}
+                    editable={!loading}
                   />
                 </View>
+                {errors.firstName && (
+                  <Text className="text-red-500 text-sm mt-1 ml-1">
+                    {errors.firstName}
+                  </Text>
+                )}
               </View>
 
               {/* Last Name */}
               <View className="flex-1">
-                <Text className="text-gray-700 font-medium mb-2 ml-1">Nom</Text>
-                <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
-                  <Feather name="user" size={20} color="#9CA3AF" />
+                <Text className="text-ink font-medium mb-2 ml-1">Nom</Text>
+                <View
+                  className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
+                    errors.lastName ? "border-red-500" : "border-border"
+                  }`}
+                >
+                  <Feather
+                    name="user"
+                    size={20}
+                    color={errors.lastName ? "#EF4444" : COLORS.muted}
+                  />
                   <TextInput
-                    className="flex-1 ml-3 text-gray-900"
+                    className="flex-1 ml-3 text-ink"
                     placeholder="Doe"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={COLORS.muted}
                     value={form.lastName}
-                    onChangeText={(text) =>
-                      setForm({ ...form, lastName: text })
-                    }
+                    onChangeText={(text) => updateField("lastName", text)}
+                    editable={!loading}
                   />
                 </View>
+                {errors.lastName && (
+                  <Text className="text-red-500 text-sm mt-1 ml-1">
+                    {errors.lastName}
+                  </Text>
+                )}
               </View>
             </View>
 
             {/* Email */}
             <View>
-              <Text className="text-gray-700 font-medium mb-2 ml-1">Email</Text>
-              <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
+              <Text className="text-ink font-medium mb-2 ml-1">Email</Text>
+              <View
+                className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
+                  errors.email ? "border-red-500" : "border-border"
+                }`}
+              >
                 <MaterialCommunityIcons
                   name="email-outline"
                   size={20}
-                  color="#9CA3AF"
+                  color={errors.email ? "#EF4444" : COLORS.muted}
                 />
                 <TextInput
-                  className="flex-1 ml-3 text-gray-900"
+                  className="flex-1 ml-3 text-ink"
                   placeholder="exemple@email.com"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={COLORS.muted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={form.email}
-                  onChangeText={(text) => setForm({ ...form, email: text })}
+                  onChangeText={(text) => updateField("email", text)}
+                  editable={!loading}
                 />
               </View>
+              {errors.email && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.email}
+                </Text>
+              )}
             </View>
 
             {/* Phone */}
             <View>
-              <Text className="text-gray-700 font-medium mb-2 ml-1">
-                Téléphone
-              </Text>
-              <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
-                <Feather name="smartphone" size={20} color="#9CA3AF" />
+              <Text className="text-ink font-medium mb-2 ml-1">Téléphone</Text>
+              <View
+                className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
+                  errors.tel ? "border-red-500" : "border-border"
+                }`}
+              >
+                <Feather
+                  name="smartphone"
+                  size={20}
+                  color={errors.tel ? "#EF4444" : COLORS.muted}
+                />
                 <TextInput
-                  className="flex-1 ml-3 text-gray-900"
+                  className="flex-1 ml-3 text-ink"
                   placeholder="+33 6 12 34 56 78"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={COLORS.muted}
                   keyboardType="phone-pad"
                   value={form.tel}
-                  onChangeText={(text) => setForm({ ...form, tel: text })}
+                  onChangeText={(text) => updateField("tel", text)}
+                  editable={!loading}
                 />
               </View>
+              {errors.tel && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.tel}
+                </Text>
+              )}
             </View>
 
             {/* Password */}
             <View>
-              <Text className="text-gray-700 font-medium mb-2 ml-1">
+              <Text className="text-ink font-medium mb-2 ml-1">
                 Mot de passe
               </Text>
-              <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
-                <Feather name="lock" size={20} color="#9CA3AF" />
+              <View
+                className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
+                  errors.password ? "border-red-500" : "border-border"
+                }`}
+              >
+                <Feather
+                  name="lock"
+                  size={20}
+                  color={errors.password ? "#EF4444" : COLORS.muted}
+                />
                 <TextInput
-                  className="flex-1 ml-3 text-gray-900"
+                  className="flex-1 ml-3 text-ink"
                   placeholder="••••••••"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={COLORS.muted}
                   secureTextEntry={!showPassword}
                   value={form.password}
-                  onChangeText={(text) => setForm({ ...form, password: text })}
+                  onChangeText={(text) => updateField("password", text)}
+                  editable={!loading}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
+                  disabled={loading}
                 >
                   <Feather
                     name={showPassword ? "eye" : "eye-off"}
                     size={20}
-                    color="#9CA3AF"
+                    color={COLORS.muted}
                   />
                 </TouchableOpacity>
               </View>
+              {errors.password && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.password}
+                </Text>
+              )}
             </View>
           </View>
 
           {/* Terms */}
-          <View className="flex-row mt-6 items-start">
-            <View className="mt-1 w-5 h-5 rounded border border-rose-500 bg-rose-500 items-center justify-center">
-              <Ionicons name="checkmark" size={14} color="white" />
+          <TouchableOpacity
+            onPress={() => setTermsAccepted(!termsAccepted)}
+            disabled={loading}
+            className="flex-row mt-6 items-start"
+          >
+            <View
+              className={`w-5 h-5 rounded border items-center justify-center ${
+                termsAccepted
+                  ? "bg-primary border-primary"
+                  : "border-border bg-surface"
+              }`}
+            >
+              {termsAccepted && (
+                <Ionicons name="checkmark" size={14} color="white" />
+              )}
             </View>
-            <Text className="ml-3 text-gray-500 text-sm flex-1 leading-5">
+            <Text className="ml-3 text-muted text-sm flex-1 leading-5">
               En vous inscrivant, vous acceptez nos{" "}
-              <Text className="text-rose-500 font-bold">
+              <Text className="text-primary font-bold">
                 Conditions générales{" "}
               </Text>
               et notre{" "}
-              <Text className="text-rose-500 font-bold">
+              <Text className="text-primary font-bold">
                 Politique de confidentialité
               </Text>
               .
             </Text>
-          </View>
+          </TouchableOpacity>
 
           {/* Submit Button */}
           <TouchableOpacity
             onPress={handleRegister}
-            disabled={loading}
-            className="bg-rose-500 rounded-xl py-4 items-center mt-8 shadow-lg shadow-rose-200 active:bg-rose-600 mb-6"
+            disabled={loading || !termsAccepted}
+            className={`rounded-xl py-4 items-center mt-8 shadow-lg mb-6 ${
+              loading || !termsAccepted
+                ? "bg-primaryLight"
+                : "bg-primary active:bg-primaryDark"
+            }`}
           >
             {loading ? (
               <ActivityIndicator color="white" />
@@ -270,10 +388,10 @@ const RegisterScreen = () => {
 
           {/* Login Link */}
           <View className="flex-row justify-center items-center">
-            <Text className="text-gray-500">Déjà un compte ?</Text>
+            <Text className="text-muted">Déjà un compte ?</Text>
             <Link href="/login" asChild>
-              <TouchableOpacity>
-                <Text className="text-rose-500 font-bold ml-2">
+              <TouchableOpacity disabled={loading}>
+                <Text className="text-primary font-bold ml-2">
                   Se connecter
                 </Text>
               </TouchableOpacity>

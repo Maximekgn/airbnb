@@ -41,7 +41,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ type, errorMessage }) => {
             "Impossible de charger les propriétés. Vérifiez votre connexion."}
         </Text>
         <Pressable
-          onPress={() => router.push("/home")}
+          onPress={() => router.replace("/home")}
           className="bg-red-500 px-6 py-3 rounded-lg"
         >
           <Text className="text-white font-semibold">Réessayer</Text>

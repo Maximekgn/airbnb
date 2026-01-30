@@ -22,7 +22,7 @@ const HouseCard = ({
 }: HouseCardProps) => {
   return (
     <TouchableOpacity
-      className="mb-4 rounded overflow-hidden"
+      className="mb-4 rounded-2xl overflow-hidden"
       style={{ width: cardWidth }}
       onPress={onPress}
     >

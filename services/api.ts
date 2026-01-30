@@ -1,11 +1,10 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 // import Constants from "expo-constants";
 
-
-
 // Créer une instance axios avec la configuration de base
 export const api = axios.create({
-  baseURL: "http://192.168.1.68:3000", // Remplace par l'URL de ton backend
+  baseURL: "https://q1nmrsx0-3000.uks1.devtunnels.ms", // Remplace par l'URL de ton backend
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -15,11 +14,14 @@ export const api = axios.create({
 
 // Intercepteur pour ajouter le token d'authentification
 api.interceptors.request.use(
-  (config) => {
-    // Récupérer le token depuis AsyncStorage ou SecureStore
-    const token = ""; // À implémenter avec AsyncStorage
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la lecture du token:", error);
     }
     return config;
   },
@@ -35,6 +37,8 @@ api.interceptors.response.use(
     // Gérer les erreurs HTTP globales
     if (error.response?.status === 401) {
       console.error("❌ Session expirée");
+      // Optionnel: clear auth and redirect to login
+      AsyncStorage.removeItem("authToken");
     } else if (error.response?.status === 500) {
       console.error("❌ Erreur serveur:", error.response.data);
     } else if (

@@ -1,10 +1,16 @@
-import { login } from "@/services/auth";
+import { COLORS } from "@/constants/COLORS";
+import { loginUser } from "@/services/auth";
 import useAuthStore from "@/stores/authStore";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { Link, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -14,111 +20,232 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const ONBOARDING_KEY = "onboardingSeen";
 
-const Index = () => {
+const LoginScreen = () => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const storeLogin = useAuthStore((state: any) => state.login);
-  const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  React.useEffect(() => {
+  const storeLogin = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  useEffect(() => {
     AsyncStorage.setItem(ONBOARDING_KEY, "true");
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       router.replace("/home");
     }
   }, [isAuthenticated, router]);
 
-  const handleLogin = async (email: string, password: string) => {
-    const result = await login(email, password);
-    if (result.user) {
-      alert(result.message);
-      storeLogin(result.user, result.token);
-      router.replace("/home");
-    } else {
-      alert(result.message);
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!email.trim()) {
+      newErrors.email = "L'email est requis";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Email invalide";
+    }
+
+    if (!password.trim()) {
+      newErrors.password = "Le mot de passe est requis";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogin = async () => {
+    setErrors({});
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await loginUser(email, password);
+
+      if (result.success && result.user && result.access_token) {
+        storeLogin(result.user, result.access_token);
+        router.replace("/home");
+      } else {
+        const errorMessage = result.message || "Identifiants incorrects";
+        Alert.alert("Erreur de connexion", errorMessage);
+
+        // Afficher les erreurs de validation si disponibles
+        if (result.errors) {
+          const newErrors: Record<string, string> = {};
+          Object.entries(result.errors).forEach(
+            ([key, value]: [string, any]) => {
+              newErrors[key] = Array.isArray(value) ? value[0] : value;
+            },
+          );
+          setErrors(newErrors);
+        }
+      }
+    } catch (error) {
+      Alert.alert("Erreur", "Une erreur inattendue s'est produite");
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome Back</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-
-        <TouchableOpacity
-          style={styles.button}
-          activeOpacity={0.8}
-          onPress={() => handleLogin(email, password)}
+    <SafeAreaView className="flex-1 bg-bg">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          className="flex-1 px-6"
+          contentContainerStyle={{ paddingBottom: 40 }}
         >
-          <Text style={styles.buttonText}>LOGIN</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Header Section */}
+          <View className="items-center mt-16 mb-10">
+            <View className="w-20 h-20 bg-primaryLight rounded-2xl items-center justify-center mb-4 -rotate-3">
+              <Ionicons name="home" size={40} color={COLORS.primary} />
+            </View>
+            <Text className="text-3xl font-bold text-ink text-center">
+              Bon retour !
+            </Text>
+            <Text className="text-muted text-center mt-2 text-base">
+              Connectez-vous pour accéder à votre compte.
+            </Text>
+          </View>
+
+          {/* Form Fields */}
+          <View className="space-y-5">
+            {/* Email */}
+            <View>
+              <Text className="text-ink font-medium mb-2 ml-1">Email</Text>
+              <View
+                className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
+                  errors.email ? "border-red-500" : "border-border"
+                }`}
+              >
+                <MaterialCommunityIcons
+                  name="email-outline"
+                  size={20}
+                  color={errors.email ? "#EF4444" : COLORS.muted}
+                />
+                <TextInput
+                  className="flex-1 ml-3 text-ink"
+                  placeholder="exemple@email.com"
+                  placeholderTextColor={COLORS.muted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (errors.email) {
+                      const newErrors = { ...errors };
+                      delete newErrors.email;
+                      setErrors(newErrors);
+                    }
+                  }}
+                  editable={!loading}
+                />
+              </View>
+              {errors.email && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.email}
+                </Text>
+              )}
+            </View>
+
+            {/* Password */}
+            <View>
+              <Text className="text-ink font-medium mb-2 ml-1">
+                Mot de passe
+              </Text>
+              <View
+                className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
+                  errors.password ? "border-red-500" : "border-border"
+                }`}
+              >
+                <Feather
+                  name="lock"
+                  size={20}
+                  color={errors.password ? "#EF4444" : COLORS.muted}
+                />
+                <TextInput
+                  className="flex-1 ml-3 text-ink"
+                  placeholder="••••••••"
+                  placeholderTextColor={COLORS.muted}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password) {
+                      const newErrors = { ...errors };
+                      delete newErrors.password;
+                      setErrors(newErrors);
+                    }
+                  }}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                >
+                  <Feather
+                    name={showPassword ? "eye" : "eye-off"}
+                    size={20}
+                    color={COLORS.muted}
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.password && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.password}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {/* Forgot Password */}
+          <TouchableOpacity className="mt-4 self-end" disabled={loading}>
+            <Text className="text-primary font-semibold">
+              Mot de passe oublié ?
+            </Text>
+          </TouchableOpacity>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            onPress={handleLogin}
+            disabled={loading}
+            className={`rounded-xl py-4 items-center mt-8 shadow-lg ${
+              loading ? "bg-primaryLight" : "bg-primary active:bg-primaryDark"
+            }`}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-lg">Se connecter</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Register Link */}
+          <View className="flex-row justify-center items-center mt-8">
+            <Text className="text-muted">Pas encore de compte ?</Text>
+            <Link href="/register" asChild>
+              <TouchableOpacity disabled={loading}>
+                <Text className="text-primary font-bold ml-2">
+                  S&apos;inscrire
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 32,
-    textAlign: "center",
-    color: "#1a1a1a",
-  },
-  input: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: 18,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
-
-export default Index;
+export default LoginScreen;
