@@ -1,5 +1,5 @@
 import { categories } from "@/data/HOUSES";
-import { addHouse } from "@/services/houses";
+import { addHouse } from "@/services/properties";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";

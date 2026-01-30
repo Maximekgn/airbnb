@@ -1,10 +1,18 @@
 import { login } from "@/services/auth";
 import useAuthStore from "@/stores/authStore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const ONBOARDING_KEY = "onboardingSeen";
 
 const Index = () => {
   const router = useRouter();
@@ -14,10 +22,15 @@ const Index = () => {
   const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated);
 
   React.useEffect(() => {
+    AsyncStorage.setItem(ONBOARDING_KEY, "true");
+  }, []);
+
+  React.useEffect(() => {
     if (isAuthenticated) {
       router.replace("/home");
     }
   }, [isAuthenticated, router]);
+
   const handleLogin = async (email: string, password: string) => {
     const result = await login(email, password);
     if (result.user) {

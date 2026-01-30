@@ -1,20 +1,19 @@
-import { Stack, useRouter } from "expo-router";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import useAuthStore from "@/stores/authStore";
+import { Stack, useRouter } from "expo-router";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 export default function HomeLayout() {
   const router = useRouter();
-  const isAuthenticated = useAuthStore((state:any) => state.isAuthenticated);
-  if(!isAuthenticated){
-    router.replace("/login");
-  }
   return (
     <View style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
       </Stack>
-      <TouchableOpacity style={styles.fab} activeOpacity={0.7} onPress={() => router.push("/houses/add")}>
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.7}
+        onPress={() => router.push("/houses/add")}
+      >
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
     </View>

@@ -1,8 +1,8 @@
 // stores/authStore.js
-import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { User } from '../interfaces/User';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { User } from "../interfaces/User";
 
 const useAuthStore = create(
   persist(
@@ -11,7 +11,8 @@ const useAuthStore = create(
       user: null,
       token: null,
       isAuthenticated: false,
-      
+      hasHydrated: false,
+
       // Actions
       login: (userData: User, authToken: string) => {
         set({
@@ -20,7 +21,7 @@ const useAuthStore = create(
           isAuthenticated: true,
         });
       },
-      
+
       logout: () => {
         set({
           user: null,
@@ -28,13 +29,13 @@ const useAuthStore = create(
           isAuthenticated: false,
         });
       },
-      
+
       updateUser: (userData: User) => {
         set((state: { user: User }) => ({
           user: { ...state.user, ...userData },
         }));
       },
-      
+
       clearAuth: () => {
         set({
           user: null,
@@ -42,14 +43,21 @@ const useAuthStore = create(
           isAuthenticated: false,
         });
       },
+
+      setHasHydrated: (value: boolean) => {
+        set({ hasHydrated: value });
+      },
     }),
     {
-      name: 'auth-storage', // nom unique pour le stockage
+      name: "auth-storage", // nom unique pour le stockage
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
       // Optionnel: spécifier quels champs persister
       // partialize: (state) => ({ user: state.user, token: state.token }),
-    }
-  )
+    },
+  ),
 );
 
 export default useAuthStore;

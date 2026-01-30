@@ -1,7 +1,12 @@
-import { register } from '@/services/auth';
-import { Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
-import React, { useState } from 'react';
+import { register } from "@/services/auth";
+import {
+  Feather,
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import { Link, router } from "expo-router";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,44 +17,67 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
+const ONBOARDING_KEY = "onboardingSeen";
 
 const RegisterScreen = () => {
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    tel: '',
-    password: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    tel: "",
+    password: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const storeLogin = useAuthStore((state: any) => state.login);
+
+  useEffect(() => {
+    AsyncStorage.setItem(ONBOARDING_KEY, "true");
+  }, []);
 
   const handleRegister = async () => {
     // Basic validation
-    if (!form.firstName || !form.lastName || !form.email || !form.password || !form.tel) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+    if (
+      !form.firstName ||
+      !form.lastName ||
+      !form.email ||
+      !form.password ||
+      !form.tel
+    ) {
+      Alert.alert("Erreur", "Veuillez remplir tous les champs");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await register(form.email, form.password, form.firstName, form.lastName, form.tel);
+      const response = await register(
+        form.email,
+        form.password,
+        form.firstName,
+        form.lastName,
+        form.tel,
+      );
 
       if (response.user) {
-        Alert.alert('Succès', 'Votre compte a été créé avec succès', [
-          { text: 'OK', onPress: () => router.replace('/home') } // Adjust route as needed
+        await AsyncStorage.setItem(ONBOARDING_KEY, "true");
+        storeLogin(response.user, response.token);
+        Alert.alert("Succès", "Votre compte a été créé avec succès", [
+          { text: "OK", onPress: () => router.replace("/home") },
         ]);
       } else {
-        Alert.alert('Erreur', response.message || "Une erreur est survenue lors de l'inscription");
+        Alert.alert(
+          "Erreur",
+          response.message || "Une erreur est survenue lors de l'inscription",
+        );
       }
     } catch (error) {
-      Alert.alert('Erreur', "Une erreur inattendue s'est produite");
+      Alert.alert("Erreur", "Une erreur inattendue s'est produite");
       console.error(error);
     } finally {
       setLoading(false);
@@ -59,7 +87,7 @@ const RegisterScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
@@ -94,7 +122,9 @@ const RegisterScreen = () => {
 
           <View className="flex-row items-center mb-8">
             <View className="flex-1 h-[1px] bg-gray-200" />
-            <Text className="mx-4 text-gray-400 font-medium">Ou continuer avec email</Text>
+            <Text className="mx-4 text-gray-400 font-medium">
+              Ou continuer avec email
+            </Text>
             <View className="flex-1 h-[1px] bg-gray-200" />
           </View>
 
@@ -103,7 +133,9 @@ const RegisterScreen = () => {
             <View className="flex-row space-x-4">
               {/* First Name */}
               <View className="flex-1">
-                <Text className="text-gray-700 font-medium mb-2 ml-1">Prénom</Text>
+                <Text className="text-gray-700 font-medium mb-2 ml-1">
+                  Prénom
+                </Text>
                 <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
                   <Feather name="user" size={20} color="#9CA3AF" />
                   <TextInput
@@ -111,7 +143,9 @@ const RegisterScreen = () => {
                     placeholder="John"
                     placeholderTextColor="#9CA3AF"
                     value={form.firstName}
-                    onChangeText={(text) => setForm({ ...form, firstName: text })}
+                    onChangeText={(text) =>
+                      setForm({ ...form, firstName: text })
+                    }
                   />
                 </View>
               </View>
@@ -126,7 +160,9 @@ const RegisterScreen = () => {
                     placeholder="Doe"
                     placeholderTextColor="#9CA3AF"
                     value={form.lastName}
-                    onChangeText={(text) => setForm({ ...form, lastName: text })}
+                    onChangeText={(text) =>
+                      setForm({ ...form, lastName: text })
+                    }
                   />
                 </View>
               </View>
@@ -136,7 +172,11 @@ const RegisterScreen = () => {
             <View>
               <Text className="text-gray-700 font-medium mb-2 ml-1">Email</Text>
               <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
-                <MaterialIconWrapper name="email-outline" size={20} color="#9CA3AF" />
+                <MaterialCommunityIcons
+                  name="email-outline"
+                  size={20}
+                  color="#9CA3AF"
+                />
                 <TextInput
                   className="flex-1 ml-3 text-gray-900"
                   placeholder="exemple@email.com"
@@ -151,7 +191,9 @@ const RegisterScreen = () => {
 
             {/* Phone */}
             <View>
-              <Text className="text-gray-700 font-medium mb-2 ml-1">Téléphone</Text>
+              <Text className="text-gray-700 font-medium mb-2 ml-1">
+                Téléphone
+              </Text>
               <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
                 <Feather name="smartphone" size={20} color="#9CA3AF" />
                 <TextInput
@@ -167,7 +209,9 @@ const RegisterScreen = () => {
 
             {/* Password */}
             <View>
-              <Text className="text-gray-700 font-medium mb-2 ml-1">Mot de passe</Text>
+              <Text className="text-gray-700 font-medium mb-2 ml-1">
+                Mot de passe
+              </Text>
               <View className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3.5 flex-row items-center focus:border-rose-500 focus:bg-white transition-colors">
                 <Feather name="lock" size={20} color="#9CA3AF" />
                 <TextInput
@@ -178,8 +222,14 @@ const RegisterScreen = () => {
                   value={form.password}
                   onChangeText={(text) => setForm({ ...form, password: text })}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#9CA3AF" />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Feather
+                    name={showPassword ? "eye" : "eye-off"}
+                    size={20}
+                    color="#9CA3AF"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -191,8 +241,15 @@ const RegisterScreen = () => {
               <Ionicons name="checkmark" size={14} color="white" />
             </View>
             <Text className="ml-3 text-gray-500 text-sm flex-1 leading-5">
-              En vous inscrivant, vous acceptez nos <Text className="text-rose-500 font-bold">Conditions générales </Text>
-              et notre <Text className="text-rose-500 font-bold">Politique de confidentialité</Text>.
+              En vous inscrivant, vous acceptez nos{" "}
+              <Text className="text-rose-500 font-bold">
+                Conditions générales{" "}
+              </Text>
+              et notre{" "}
+              <Text className="text-rose-500 font-bold">
+                Politique de confidentialité
+              </Text>
+              .
             </Text>
           </View>
 
@@ -205,7 +262,9 @@ const RegisterScreen = () => {
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-bold text-lg">Créer un compte</Text>
+              <Text className="text-white font-bold text-lg">
+                Créer un compte
+              </Text>
             )}
           </TouchableOpacity>
 
@@ -214,22 +273,16 @@ const RegisterScreen = () => {
             <Text className="text-gray-500">Déjà un compte ?</Text>
             <Link href="/login" asChild>
               <TouchableOpacity>
-                <Text className="text-rose-500 font-bold ml-2">Se connecter</Text>
+                <Text className="text-rose-500 font-bold ml-2">
+                  Se connecter
+                </Text>
               </TouchableOpacity>
             </Link>
           </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-// Helper component for MaterialCommunityIcons usage if needed, mostly handled by Feather/Ionicons above
-// But I used MaterialIconWrapper in one spot, let's fix that to standard Icon or define it.
-// Actually I see I used `MaterialIconWrapper` which is not defined. I should use MaterialCommunityIcons directly.
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-const MaterialIconWrapper = (props: any) => <MaterialCommunityIcons {...props} />;
-
+};
 
 export default RegisterScreen;

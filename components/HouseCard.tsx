@@ -7,7 +7,7 @@ const cardWidth = (width - 48) / 2;
 
 interface HouseCardProps {
   image: string;
-  price: string;
+  price: string | number;
   name: string;
   location: string;
   onPress?: () => void;
@@ -22,7 +22,7 @@ const HouseCard = ({
 }: HouseCardProps) => {
   return (
     <TouchableOpacity
-      className="mb-4 rounded-3xl overflow-hidden"
+      className="mb-4 rounded overflow-hidden"
       style={{ width: cardWidth }}
       onPress={onPress}
     >
@@ -45,7 +45,7 @@ const HouseCard = ({
         {/* Price Tag */}
         <View className="absolute top-3 right-3 bg-gray-800/80 rounded-full px-2 py-1">
           <Text className="text-white text-xs font-semibold">
-            {price}/ Mois
+            {price} FCFA/ Mois
           </Text>
         </View>
 

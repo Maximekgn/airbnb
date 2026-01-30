@@ -52,6 +52,9 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "BACKEND_URL": "http://localhost:3000"
     }
   }
 }

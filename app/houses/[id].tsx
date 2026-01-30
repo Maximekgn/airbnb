@@ -1,31 +1,39 @@
 import { APP_INFO } from "@/constants/APP_INFO";
+import { getPropertyById } from "@/services/properties";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
   Linking,
   Modal,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
+import {
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { HOUSES } from "../../data/HOUSES";
 
-const { width } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const TEXTS = {
   title: "Détails du logement",
   notFound: "Maison non trouvée",
-  photos: "Photos du bien",
+  notFoundDesc: "Ce logement n'existe pas ou a été supprimé.",
+  photos: "Galerie photos",
   details: "Caractéristiques",
-  about: "À propos",
-  host: "Hôte",
+  about: "À propos du logement",
+  host: "Votre hôte",
   call: "Appeler",
   whatsapp: "WhatsApp",
   email: "Email",
@@ -40,91 +48,313 @@ const TEXTS = {
   unavailable: "Non disponible",
   yes: "Oui",
   no: "Non",
+  contactHost: "Contacter l'hôte",
+  goBack: "Retour",
+  loading: "Chargement...",
 };
 
-export default function HouseDetail() {
+const COLORS = {
+  primary: "#FF385C",
+  primaryDark: "#E31C5F",
+  secondary: "#00A699",
+  background: "#FFFFFF",
+  surface: "#F7F7F7",
+  surfaceHover: "#EBEBEB",
+  text: "#222222",
+  textSecondary: "#717171",
+  textLight: "#B0B0B0",
+  border: "#DDDDDD",
+  success: "#25D366",
+  star: "#FFB400",
+  white: "#FFFFFF",
+  black: "#000000",
+  overlay: "rgba(0,0,0,0.5)",
+};
+
+const COLORS = {
+  primary: "#FF385C",
+  primaryDark: "#E31C5F",
+  secondary: "#00A699",
+  background: "#FFFFFF",
+  surface: "#F7F7F7",
+  surfaceHover: "#EBEBEB",
+  text: "#222222",
+  textSecondary: "#717171",
+  textLight: "#B0B0B0",
+  border: "#DDDDDD",
+  success: "#25D366",
+  star: "#FFB400",
+  white: "#FFFFFF",
+  black: "#000000",
+  overlay: "rgba(0,0,0,0.5)",
+};
+
+// Responsive breakpoints
+const getResponsiveValues = (width: number) => {
+  const isTablet = width >= 768;
+  const isDesktop = width >= 1024;
+
+  return {
+    containerPadding: isDesktop ? 40 : isTablet ? 32 : 20,
+    imageHeight: isDesktop ? 450 : isTablet ? 380 : width * 0.65,
+    thumbnailSize: isDesktop ? 120 : isTablet ? 100 : 88,
+    detailColumns: isDesktop ? 6 : isTablet ? 4 : 3,
+    fontSize: {
+      title: isDesktop ? 28 : isTablet ? 24 : 22,
+      subtitle: isDesktop ? 18 : isTablet ? 16 : 15,
+      body: isDesktop ? 16 : 14,
+      small: isDesktop ? 14 : 12,
+    },
+    spacing: {
+      section: isDesktop ? 32 : isTablet ? 28 : 24,
+      item: isDesktop ? 20 : isTablet ? 16 : 12,
+    },
+  };
+};
+
+export default function PropertyDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { width: windowWidth } = useWindowDimensions();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [property, setProperty] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const scrollY = useSharedValue(0);
 
-  const CURRENCY = APP_INFO.curency || "fcfa";
-  const house = HOUSES.find((h) => h.id === id);
+  const responsive = getResponsiveValues(windowWidth);
 
-  if (!house) {
+  useEffect(() => {
+    const fetchProperty = async () => {
+      const data = await getPropertyById(id);
+      setProperty(data);
+      setLoading(false);
+    };
+    fetchProperty();
+  }, [id]);
+
+  const CURRENCY = APP_INFO.curency || "FCFA";
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(scrollY.value, [0, 100], [0, 1]);
+    return {
+      opacity,
+      backgroundColor: `rgba(255, 255, 255, ${opacity})`,
+    };
+  });
+
+  if (loading) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{TEXTS.notFound}</Text>
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text className="mt-4 text-gray-500 text-base">{TEXTS.loading}</Text>
       </View>
     );
   }
 
-  const photos =
-    house.gallery && house.gallery.length > 0 ? house.gallery : [house.image];
+  if (!property) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center px-8">
+          <View className="w-24 h-24 rounded-full bg-red-50 justify-center items-center mb-6">
+            <Ionicons name="home-outline" size={48} color={COLORS.primary} />
+          </View>
+          <Text className="text-xl font-bold text-gray-900 mb-2">
+            {TEXTS.notFound}
+          </Text>
+          <Text className="text-gray-500 text-center mb-8">
+            {TEXTS.notFoundDesc}
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="bg-black px-8 py-4 rounded-xl"
+          >
+            <Text className="text-white font-semibold">{TEXTS.goBack}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-  const details = [
+  const photos =
+    property.gallery && property.gallery.length > 0
+      ? property.gallery.map((item: any) => item.url)
+      : [property.image];
+
+  const details: {
+    key: string;
+    label: string;
+    value: string;
+    icon: React.ComponentProps<typeof Ionicons>["name"];
+    color: string;
+  }[] = [
     {
       key: "bedrooms",
       label: TEXTS.bedrooms,
-      value: String(house.features?.bedrooms ?? "-"),
+      value: String(property.bedrooms ?? "-"),
       icon: "bed-outline",
+      color: "#6366F1",
     },
     {
       key: "bathrooms",
       label: TEXTS.bathrooms,
-      value: String(house.features?.bathrooms ?? "-"),
+      value: String(property.bathrooms ?? "-"),
       icon: "water-outline",
+      color: "#0EA5E9",
     },
     {
       key: "garage",
       label: TEXTS.garage,
-      value: house.features?.garage ? TEXTS.yes : TEXTS.no,
+      value: property.garage ? TEXTS.yes : TEXTS.no,
       icon: "car-outline",
+      color: "#8B5CF6",
     },
     {
       key: "parking",
       label: TEXTS.parking,
       value:
-        house.features?.parking !== undefined &&
-        house.features?.parking !== null
-          ? `${house.features?.parking} place${(house.features?.parking || 0) > 1 ? "s" : ""}`
+        property.parking !== undefined && property.parking !== null
+          ? `${property.parking} place${(property.parking || 0) > 1 ? "s" : ""}`
           : "-",
       icon: "car-sport-outline",
+      color: "#EC4899",
     },
     {
       key: "wifi",
       label: TEXTS.wifi,
-      value: house.features?.wifi ? TEXTS.available : TEXTS.unavailable,
+      value: property.wifi ? TEXTS.available : TEXTS.unavailable,
       icon: "wifi-outline",
+      color: "#10B981",
     },
     {
       key: "kitchen",
       label: TEXTS.kitchen,
-      value: house.features?.kitchen || "-",
+      value: property.kitchen || "-",
       icon: "restaurant-outline",
+      color: "#F59E0B",
     },
   ];
 
   const handleCall = () => {
-    if (house.owner?.phone) {
-      Linking.openURL(`tel:${house.owner.phone}`);
+    if (property.owner?.tel) {
+      Linking.openURL(`tel:${property.owner.tel}`);
     }
   };
 
   const handleWhatsApp = () => {
-    if (house.owner?.phone) {
-      const phone = house.owner.phone.replace(/\s+/g, "");
+    if (property.owner?.tel) {
+      const phone = property.owner.tel.replace(/\s+/g, "");
       Linking.openURL(`https://wa.me/${phone}`);
     }
   };
 
   const handleEmail = () => {
-    if (house.owner?.email) {
-      Linking.openURL(`mailto:${house.owner.email}`);
+    if (property.owner?.email) {
+      Linking.openURL(`mailto:${property.owner.email}`);
     }
   };
 
-  const handleOpenImage = (uri: string) => setSelectedImage(uri);
+  const handleOpenImage = (uri: string, index: number) => {
+    setSelectedImage(uri);
+    setSelectedImageIndex(index);
+  };
 
-  const TITLE = TEXTS.title;
+  const handleShare = async () => {
+    // Placeholder for share functionality
+  };
+
+  // Detail Card Component
+  const DetailCard = ({
+    item,
+    index,
+  }: {
+    item: (typeof details)[0];
+    index: number;
+  }) => (
+    <Animated.View
+      entering={FadeInDown.delay(index * 50).springify()}
+      className="items-center justify-center p-4 bg-white rounded-2xl border border-gray-100"
+      style={{
+        width: windowWidth >= 1024 ? "15%" : windowWidth >= 768 ? "22%" : "30%",
+        marginBottom: responsive.spacing.item,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      }}
+    >
+      <View
+        className="w-12 h-12 rounded-full items-center justify-center mb-3"
+        style={{ backgroundColor: `${item.color}15` }}
+      >
+        <Ionicons name={item.icon} size={24} color={item.color} />
+      </View>
+      <Text
+        className="font-bold text-gray-900"
+        style={{ fontSize: responsive.fontSize.subtitle }}
+      >
+        {item.value}
+      </Text>
+      <Text
+        className="text-gray-500 text-center mt-1"
+        style={{ fontSize: responsive.fontSize.small }}
+      >
+        {item.label}
+      </Text>
+    </Animated.View>
+  );
+
+  // Action Button Component
+  const ActionButton = ({
+    icon,
+    label,
+    onPress,
+    variant = "default",
+  }: {
+    icon: React.ComponentProps<typeof Ionicons>["name"];
+    label: string;
+    onPress: () => void;
+    variant?: "default" | "whatsapp" | "primary";
+  }) => {
+    const bgColor =
+      variant === "whatsapp"
+        ? COLORS.success
+        : variant === "primary"
+          ? COLORS.primary
+          : COLORS.white;
+    const textColor = variant === "default" ? COLORS.text : COLORS.white;
+    const iconColor = variant === "default" ? COLORS.text : COLORS.white;
+
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        className="flex-row items-center justify-center px-5 py-3 rounded-xl"
+        style={{
+          backgroundColor: bgColor,
+          borderWidth: variant === "default" ? 1 : 0,
+          borderColor: COLORS.border,
+          flex: 1,
+          minWidth: 100,
+        }}
+        activeOpacity={0.8}
+      >
+        <Ionicons name={icon} size={18} color={iconColor} />
+        <Text
+          className="font-semibold ml-2"
+          style={{ color: textColor, fontSize: responsive.fontSize.body }}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -143,13 +373,13 @@ export default function HouseDetail() {
         <TouchableOpacity
           style={styles.imageCard}
           activeOpacity={0.9}
-          onPress={() => handleOpenImage(house.image)}
+          onPress={() => handleOpenImage(property.image)}
         >
-          <Image source={{ uri: house.image }} style={styles.mainImage} />
+          <Image source={{ uri: property.image }} style={styles.mainImage} />
 
           <View style={styles.priceBadge}>
             <Text style={styles.priceBadgeText}>
-              {CURRENCY} {house.price}
+              {CURRENCY} {property.price}
             </Text>
             <Text style={styles.pricePer}>{TEXTS.pricePer}</Text>
           </View>
@@ -157,14 +387,16 @@ export default function HouseDetail() {
 
         <View style={styles.rowBetween}>
           <View>
-            <Text style={styles.houseName}>{house.name}</Text>
+            <Text style={styles.propertyName}>{property.name}</Text>
             <View style={styles.locationContainer}>
               <Ionicons name="location-outline" size={14} color="#777" />
-              <Text style={styles.locationText}> {house.location}</Text>
+              <Text style={styles.locationText}> {property.location}</Text>
             </View>
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={14} color="#f5a623" />
-              <Text style={styles.ratingText}>{house.rating.toFixed(1)}</Text>
+              <Text style={styles.ratingText}>
+                {property.rating.toFixed(1)}
+              </Text>
             </View>
           </View>
           {/* <TouchableOpacity style={styles.mapButton}>
@@ -222,22 +454,24 @@ export default function HouseDetail() {
         <Text style={[styles.sectionTitle, { marginTop: 4 }]}>
           {TEXTS.about}
         </Text>
-        <Text style={styles.description}>{house.description}</Text>
+        <Text style={styles.description}>{property.description}</Text>
 
         <Text style={styles.sectionTitle}>{TEXTS.host}</Text>
         <View style={styles.hostCard}>
           <View style={styles.hostInfo}>
             <Image
-              source={{ uri: house.owner?.avatar || house.image }}
+              source={{ uri: property.owner?.avatar || property.image }}
               style={styles.hostAvatar}
             />
             <View style={{ flex: 1 }}>
-              <Text style={styles.hostName}>{house.owner?.name}</Text>
-              {house.owner?.phone ? (
-                <Text style={styles.hostContact}>{house.owner.phone}</Text>
+              <Text style={styles.hostName}>
+                {property.owner?.firstName} {property.owner?.lastName}
+              </Text>
+              {property.owner?.tel ? (
+                <Text style={styles.hostContact}>{property.owner.tel}</Text>
               ) : null}
-              {house.owner?.email ? (
-                <Text style={styles.hostContact}>{house.owner.email}</Text>
+              {property.owner?.email ? (
+                <Text style={styles.hostContact}>{property.owner.email}</Text>
               ) : null}
             </View>
           </View>
@@ -352,7 +586,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 6,
   },
-  houseName: { fontSize: 20, fontWeight: "700", color: "#111" },
+  propertyName: { fontSize: 20, fontWeight: "700", color: "#111" },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",

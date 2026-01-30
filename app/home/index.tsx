@@ -1,37 +1,75 @@
+import type { Property } from "@/interfaces/Property";
+import { getAllProperties } from "@/services/properties";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AdBanner from "../../components/AdBanner";
 import CategoryButton from "../../components/CategoryButton";
+import EmptyState from "../../components/EmptyState";
 import HouseCard from "../../components/HouseCard";
 import SearchBar from "../../components/SearchBar";
 import TopBar from "../../components/TopBar";
-import AdBanner from "../../components/AdBanner";
-import { HOUSES, categories } from "../../data/HOUSES";
+import { categories } from "../../data/HOUSES";
 
 const Home = () => {
   const [activeCategory, setActiveCategory] = useState("Rental House");
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const TITLE_1 = "Trouvez";
   const TITLE_2 = "Votre nouveaux logement";
   const TITLE_3 = "Logements proches de vous";
   const router = useRouter();
-  
+
   const onCategoryPress = (category: string) => {
     setActiveCategory(category);
     router.push({ pathname: "/houses", params: { s: category } });
   };
-  
+
   const onHousePress = (id: string) => {
     router.push({
       pathname: "/houses/[id]",
       params: { id },
     });
   };
-  
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getAllProperties();
+        setProperties(Array.isArray(data) ? data : []);
+      } catch (error: any) {
+        console.error("Erreur lors du chargement des propriétés:", error);
+        setProperties([]);
+        let errorMessage =
+          "Impossible de charger les propriétés. Vérifiez votre connexion.";
+
+        if (error.code === "ECONNREFUSED") {
+          errorMessage =
+            "Le serveur n'est pas accessible. Vérifiez que localhost:3000 est en cours d'exécution.";
+        } else if (error.response?.status === 500) {
+          errorMessage = "Erreur serveur. Veuillez réessayer plus tard.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1">
+      
       {/* Contenu principal avec défilement */}
-      <ScrollView showsVerticalScrollIndicator={false} className="pb-20">
+      <ScrollView showsVerticalScrollIndicator={false} className="pb-20 bg-white">
         {/* Top Bar */}
         <TopBar />
 
@@ -72,23 +110,29 @@ const Home = () => {
 
         {/* House Cards Grid */}
         <View className="px-4 flex-row flex-wrap justify-between">
-          {HOUSES.map((house) => (
-            <HouseCard
-              key={house.id}
-              image={house.image}
-              price={house.price}
-              name={house.name}
-              location={house.location}
-              onPress={() => onHousePress(house.id)}
-            />
-          ))}
+          {loading && <EmptyState type="loading" />}
+          {error && <EmptyState type="error" errorMessage={error} />}
+          {!loading && !error && properties.length === 0 && (
+            <EmptyState type="no-properties" />
+          )}
+          {!loading &&
+            !error &&
+            properties.length > 0 &&
+            properties.map((house) => (
+              <HouseCard
+                key={house.id}
+                image={house.image}
+                price={house.price}
+                name={house.name}
+                location={house.location}
+                onPress={() => onHousePress(house.id)}
+              />
+            ))}
         </View>
-        
+
         {/* Espace en bas */}
         <View className="h-4" />
       </ScrollView>
-      
-      
     </SafeAreaView>
   );
 };
