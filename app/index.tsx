@@ -40,11 +40,6 @@ const WelcomeScreen = () => {
           router.replace("/home");
           return;
         }
-
-        if (seen === "true") {
-          router.replace("/login");
-          return;
-        }
       } finally {
         setChecking(false);
       }
@@ -76,7 +71,7 @@ const WelcomeScreen = () => {
       <View style={styles.logoSection}>
         {/* Logo Circle */}
         <View style={styles.logoCircle}>
-          <Ionicons name="snow-outline" size={32} color="black" />
+          <Ionicons name="snow-outline" size={32} color="white" />
         </View>
 
         {/* Main Title */}
@@ -116,7 +111,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "white",
+    backgroundColor: "#FDFCFA",
   },
   background: {
     flex: 1,
@@ -133,14 +128,14 @@ const styles = StyleSheet.create({
   logoCircle: {
     width: 110,
     height: 110,
-    backgroundColor: "white",
+    backgroundColor: "#D4A574",
     borderRadius: 55,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 30,
-    shadowColor: "#000",
+    shadowColor: "#957A44",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
   },
@@ -150,7 +145,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
     lineHeight: 11,
-    color: "#000",
+    color: "#FFFFFF",
   },
   mainTitle: {
     fontSize: 48,
@@ -167,7 +162,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   bottomContainer: {
-    backgroundColor: "white",
+    backgroundColor: "#FFFFFF",
     borderTopRightRadius: 100,
     paddingHorizontal: 32,
     paddingTop: 48,
@@ -178,13 +173,13 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 36,
     fontWeight: "800",
-    color: "#1f2937",
+    color: "#957A44",
     marginBottom: 16,
     letterSpacing: 1,
   },
   tagline: {
     fontSize: 15,
-    color: "#6b7280",
+    color: "#8B8B8B",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 40,
@@ -192,14 +187,14 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     width: "100%",
-    backgroundColor: "#111827",
+    backgroundColor: "#957A44",
     paddingVertical: 16,
     borderRadius: 30,
     alignItems: "center",
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: "#957A44",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -210,20 +205,20 @@ const styles = StyleSheet.create({
   },
   signupButton: {
     width: "100%",
-    backgroundColor: "white",
+    backgroundColor: "#F5E6D3",
     borderWidth: 1.5,
-    borderColor: "#d1d5db",
+    borderColor: "#D4A574",
     paddingVertical: 16,
     borderRadius: 30,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: "#957A44",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
   },
   signupButtonText: {
-    color: "#111827",
+    color: "#957A44",
     fontWeight: "700",
     fontSize: 17,
   },

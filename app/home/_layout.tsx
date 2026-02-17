@@ -12,7 +12,7 @@ export default function HomeLayout() {
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.7}
-        onPress={() => router.push("/houses/add")}
+        onPress={() => router.push("/properties/add")}
       >
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>

@@ -1,21 +1,28 @@
 import { api } from "./api";
-import { User, LoginResponse, RegisterPayload } from "@/interfaces/User";
+import { User, LoginResponse, RegisterPayload, LoginPayload } from "@/interfaces/User";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
  * Inscription - Crée un nouveau compte
- * POST /users
+ * POST /auth/register (selon la documentation)
  */
 export const registerUser = async (payload: RegisterPayload) => {
   try {
-    const response = await api.post<User>("/users", {
+    // Préparer les données de base
+    const data: any = {
       firstName: payload.firstName,
       lastName: payload.lastName,
       email: payload.email,
-      tel: payload.tel,
       password: payload.password,
-      ...(payload.avatar && { avatar: payload.avatar }),
-    });
+    };
+
+    // Ajouter les champs optionnels
+    if (payload.tel) {
+      data.tel = payload.tel;
+    }
+
+    const response = await api.post<User>("/auth/register", data);
+
     return {
       success: true,
       user: response.data,
@@ -25,12 +32,14 @@ export const registerUser = async (payload: RegisterPayload) => {
     const errorMessage =
       error.response?.data?.message ||
       error.response?.data?.error ||
+      error.response?.data?.[0] || // Gère les erreurs de validation sous forme de tableau
       "Erreur lors de l'inscription";
+
     return {
       success: false,
       user: null,
       message: errorMessage,
-      errors: error.response?.data?.errors,
+      errors: error.response?.data?.message || error.response?.data?.errors,
     };
   }
 };
@@ -39,11 +48,11 @@ export const registerUser = async (payload: RegisterPayload) => {
  * Connexion - Authentifie l'utilisateur et retourne un JWT
  * POST /auth/login
  */
-export const loginUser = async (email: string, password: string) => {
+export const loginUser = async (payload: LoginPayload) => {
   try {
     const response = await api.post<LoginResponse>("/auth/login", {
-      email,
-      password,
+      email: payload.email,
+      password: payload.password,
     });
 
     const { access_token, user } = response.data;
@@ -61,6 +70,7 @@ export const loginUser = async (email: string, password: string) => {
     const errorMessage =
       error.response?.data?.message ||
       error.response?.data?.error ||
+      error.response?.data?.message?.[0] ||
       "Erreur lors de la connexion";
     return {
       success: false,
@@ -74,11 +84,11 @@ export const loginUser = async (email: string, password: string) => {
 
 /**
  * Récupérer le profil actuel
- * GET /users/me
+ * GET /users/profile
  */
 export const getCurrentUser = async () => {
   try {
-    const response = await api.get<User>("/users/me");
+    const response = await api.get<User>("/users/profile");
     return {
       success: true,
       user: response.data,
@@ -103,7 +113,7 @@ export const logoutUser = async () => {
       success: true,
       message: "Déconnexion réussie",
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       message: "Erreur lors de la déconnexion",

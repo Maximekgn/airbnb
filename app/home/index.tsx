@@ -1,4 +1,5 @@
 import type { Property } from "@/interfaces/Property";
+import { Category, getAllCategories } from "@/services/categories";
 import { getAllProperties } from "@/services/properties";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -10,12 +11,13 @@ import EmptyState from "../../components/EmptyState";
 import HouseCard from "../../components/HouseCard";
 import SearchBar from "../../components/SearchBar";
 import TopBar from "../../components/TopBar";
-import { categories } from "../../data/HOUSES";
 
 const Home = () => {
-  const [activeCategory, setActiveCategory] = useState("Rental House");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const TITLE_1 = "Trouvez";
   const TITLE_2 = "Votre nouveaux logement";
@@ -23,16 +25,31 @@ const Home = () => {
   const router = useRouter();
 
   const onCategoryPress = (category: string) => {
-    setActiveCategory(category);
-    router.push({ pathname: "/houses", params: { s: category } });
+    setActiveCategory(category === activeCategory ? null : category);
   };
 
   const onHousePress = (id: string) => {
     router.push({
-      pathname: "/houses/[id]",
+      pathname: "/properties/[id]",
       params: { id },
     });
   };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const data = await getAllCategories();
+        setCategories(data);
+      } catch (error: any) {
+        console.error("Erreur lors du chargement des catégories:", error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -65,6 +82,11 @@ const Home = () => {
     fetchProperties();
   }, []);
 
+  // Filter properties by category
+  const filteredProperties = activeCategory
+    ? properties.filter((property) => property.category === activeCategory)
+    : properties;
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
       {/* Contenu principal avec défilement */}
@@ -87,20 +109,22 @@ const Home = () => {
         </View>
 
         {/* Categories */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="px-4 py-3"
-        >
-          {categories.map((category) => (
-            <CategoryButton
-              key={category}
-              label={category}
-              isActive={activeCategory === category}
-              onPress={() => onCategoryPress(category)}
-            />
-          ))}
-        </ScrollView>
+        {!loadingCategories && categories.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="px-4 py-3"
+          >
+            {categories.map((category) => (
+              <CategoryButton
+                key={category.id}
+                label={category.name}
+                isActive={activeCategory === category.name}
+                onPress={() => onCategoryPress(category.name)}
+              />
+            ))}
+          </ScrollView>
+        )}
 
         {/* Section Title */}
         <View className="px-4 mt-2 mb-3">
@@ -111,13 +135,13 @@ const Home = () => {
         <View className="px-4 flex-row flex-wrap justify-between">
           {loading && <EmptyState type="loading" />}
           {error && <EmptyState type="error" errorMessage={error} />}
-          {!loading && !error && properties.length === 0 && (
+          {!loading && !error && filteredProperties.length === 0 && (
             <EmptyState type="no-properties" />
           )}
           {!loading &&
             !error &&
-            properties.length > 0 &&
-            properties.map((house) => (
+            filteredProperties.length > 0 &&
+            filteredProperties.map((house) => (
               <HouseCard
                 key={house.id}
                 image={house.image}

@@ -4,7 +4,7 @@ import axios from "axios";
 
 // Créer une instance axios avec la configuration de base
 export const api = axios.create({
-  baseURL: "https://q1nmrsx0-3000.uks1.devtunnels.ms", // Remplace par l'URL de ton backend
+  baseURL: "http://192.168.1.68:3000", // Remplace par l'URL de ton backend
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",

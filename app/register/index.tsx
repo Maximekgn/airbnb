@@ -59,8 +59,9 @@ const RegisterScreen = () => {
       newErrors.email = "Email invalide";
     }
 
-    if (!form.tel.trim()) {
-      newErrors.tel = "Le téléphone est requis";
+    // Le téléphone est optionnel selon la documentation
+    if (form.tel.trim() && !/^\+?[\d\s\-()]+$/.test(form.tel)) {
+      newErrors.tel = "Numéro de téléphone invalide";
     }
 
     if (!form.password.trim()) {
@@ -266,7 +267,9 @@ const RegisterScreen = () => {
 
             {/* Phone */}
             <View>
-              <Text className="text-ink font-medium mb-2 ml-1">Téléphone</Text>
+              <Text className="text-ink font-medium mb-2 ml-1">
+                Téléphone <Text className="text-muted text-sm">(optionnel)</Text>
+              </Text>
               <View
                 className={`bg-surface border rounded-xl px-4 py-3.5 flex-row items-center ${
                   errors.tel ? "border-red-500" : "border-border"

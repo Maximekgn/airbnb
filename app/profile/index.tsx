@@ -113,6 +113,7 @@ const ProfileScreen = () => {
           <View className="flex-row flex-wrap justify-between">
             {/* Add New Card */}
             <TouchableOpacity
+              onPress={() => router.push("/properties")}
               className="bg-surface rounded-2xl border border-dashed border-border items-center justify-center mb-4"
               style={{ width: ITEM_SIZE, height: ITEM_SIZE * 1.2 }}
             >

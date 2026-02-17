@@ -67,7 +67,7 @@ const LoginScreen = () => {
 
     setLoading(true);
     try {
-      const result = await loginUser(email, password);
+      const result = await loginUser({ email, password });
 
       if (result.success && result.user && result.access_token) {
         storeLogin(result.user, result.access_token);
